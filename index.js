@@ -1,23 +1,28 @@
 import cors from 'cors';
 import express from 'express';
 import redis from 'redis';
+import chalk from 'chalk';
 
 const app = express();
 const port = 3000;
+const addr = '192.168.50.37';
+
+const connectionLog = (req, res, next) => {console.log(`received request from: ${req.ip}`); next();};
 
 app.use(cors());
+if(process.argv[2] == 'log-connections')
+    app.use(connectionLog);
 
 var db = redis.createClient({url: process.env.DATABASE_URL});
 await db.connect();
 
 app.get('/search', async (req, res) => {
-    res.status(200);
     if (!req.query.q)
     {
-        res.json([{ title: "NO DATA YET!" }]);
+        console.log("redirecting!");
         return;
     }
-
+    res.status(200);
         //send response from datbase:
         let output = await db.sMembers("documents");
         var responses = [];
@@ -31,6 +36,8 @@ app.get('/search', async (req, res) => {
 
 });
 
-app.listen(port, () => {
-    console.log(`running on http://localhost:${port}`);
+app.listen(port, addr, () => {
+    console.log(`running on http://${addr}:${port}`);
+    if(process.argv[2])
+        console.log(`in ${chalk.yellow(process.argv[2])} mode`);
 });
