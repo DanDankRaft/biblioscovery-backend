@@ -2,17 +2,28 @@ import cors from 'cors';
 import express from 'express';
 import redis from 'redis';
 import chalk from 'chalk';
+import os from 'os';
 import 'dotenv/config';
+
+function inMode(mode)
+{
+    return process.argv.includes(mode);
+}
+
 
 const app = express();
 const port = 3000;
-const addr = '192.168.50.37';
+let addr;
+if(inMode('dev'))
+    addr = os.networkInterfaces()['Wi-Fi'][1].address;
+else
+    addr = '';
 
 //this middleware allows any device to connect to the database and retreive any response
 app.use(cors());
 
 //this middleware, which is only activated if the 'log-connections' option is present, prints any request we receive
-if(process.argv.includes('log-connections'))
+if(inMode('log-connections'))
 {
     app.use(connectionLog);
     const connectionLog = (req, res, next) => {console.log(`received request from: ${req.ip}`); next();};
@@ -27,16 +38,27 @@ app.get('/search', async (req, res) => {
     if (!req.query.q)
     {
         console.log("no query inputted!");
+        res.status(400);
         return;
     }
-    res.status(200);
-    
-    //send response from datbase:
-    // let output = await db.sendCommand["FT.SEARCH", 'dix:documents', `\"${req.query.q}\"`];
-    let output = await db.ft.search("idx:documents", `${req.query.q}`);
-    let responses = output.documents.map((result, index) => result.value);
 
-    res.json(responses);
+    //TODO - add escape sequences to all data
+
+    //we need to add escape sequences to all punctuation
+    let formattedQuery = req.query.q.replace(/([\,\.\<\>\{\}\[\]\"\'\:\;\!\@\#\$\%\^\&\*\(\)\-\+\=\~])/, "\\$1");
+    //send response from datbase:
+    try
+    {
+        let output = await db.ft.search("idx:documents", `${req.query.q}`);
+        let responses = output.documents.map((result, index) => result.value);
+
+        res.status(200).json(responses);
+    }
+    catch(e)
+    {
+        console.log(chalk.red(`error! ${e.message}`))
+        res.status(400);
+    }
 
 });
 
