@@ -30,7 +30,7 @@ if(inMode('log-connections'))
 }
 
 //establishing connection to the redis database
-let db = redis.createClient({url: process.env.DATABASE_URL, password: "UGm9UzAJjDYrImBZVaPzNf0TkNYM7tUm"});
+let db = redis.createClient({url: process.env.DATABASE_URL, password: process.env.DATABASE_PASSWORD, username: process.env.DATABASE_USERNAME});
 await db.connect();
 
 //the search query!
