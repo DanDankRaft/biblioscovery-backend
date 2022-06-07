@@ -16,6 +16,8 @@ const port = 3000;
 let addr;
 if(inMode('dev'))
     addr = os.networkInterfaces()['Wi-Fi'][1].address;
+else if(inMode('prod'))
+    addr = '0.0.0.0';
 else
     addr = '';
 
@@ -64,6 +66,14 @@ app.get('/search', async (req, res) => {
 
 app.listen(port, addr, () => {
     console.log(`running on http://${addr}:${port}`);
-    if(process.argv[2])
-        console.log(`in ${chalk.yellow(process.argv[2])} mode`);
+
+    let modeName = "";
+    if(inMode('dev'))
+        modeName = "dev";
+    if(inMode('prod'))
+        modeName = "production";
+    if(inMode('log-connections'))
+        modeName += ", log-connections";
+    if(modeName != "")
+        console.log(`in ${chalk.yellow(modeName)} mode`);
 });
